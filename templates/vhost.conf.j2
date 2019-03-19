@@ -1,0 +1,32 @@
+{{ ansible_managed | comment }}
+
+{% set vhost = item.value %}
+<VirtualHost *:80>
+  ServerName {{ vhost.servername | mandatory }}
+{% for alias in vhost.serveralias | default([]) %}
+  ServerAlias {{ alias }}
+{% endfor %}
+{% if vhost.serveradmin is defined %}
+  ServerAdmin {{ vhost.serveradmin }}
+{% endif %}
+
+  DocumentRoot {{ vhost.documentroot | mandatory }}
+
+  <Directory "{{ vhost.documentroot }}">
+    AllowOverride {{ vhost.allow_override | default(apache2_allow_override) }}
+    Options {{ vhost.options | default(apache2_options) }}
+    Require all granted
+  </Directory>
+
+{% if vhost.separate_logs | default(false) %}
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+{% else %}
+  CustomLog ${APACHE_LOG_DIR}/{{ item.key }}-access.log combined
+  ErrorLog ${APACHE_LOG_DIR}/{{ item.key }}-error.log
+{% endif %}
+
+{% for parameter in vhost.extra_parameters | default([]) %}
+  {{ parameter }}
+{% endfor %}
+</VirtualHost>

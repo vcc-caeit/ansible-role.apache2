@@ -1,0 +1,35 @@
+---
+# Empty lists by default, remember to remove [] when you add content.
+# Values in these list should be module basename, like `rewrite`.
+apache2_mods_enabled: []
+apache2_mods_disabled: []
+
+# Empty lists by default, remember to remove [] when you add content.
+# Please check README for acceptable format.
+apache2_vhost_sites: []
+apache2_vhost_remove_sites: []
+apache2_vhost_template: 'vhost.conf.j2'
+apache2_allow_override: 'All'
+apache2_options: '-Indexes +FollowSymLinks'
+
+apache2_vhost_disable_default: false
+
+apache2_server_tokens: 'OS'
+apache2_server_signature: 'On'
+apache2_server_trace_enabled: 'Off'
+
+apache2_mpm: 'event'
+apache2_mpm_startservers: 2
+apache2_mpm_minspareservers: 5
+apache2_mpm_maxspareservers: 10
+apache2_mpm_minsparethreads: 25
+apache2_mpm_maxsparethreads: 75
+apache2_mpm_threadlimit: 64
+apache2_mpm_threadsperchild: 25
+apache2_mpm_serverlimit: 512
+apache2_mpm_maxrequestworkers: 150
+apache2_mpm_maxconnectionsperchild: 0
+
+# Set apache state when configuration changes are made. Recommended values:
+# 'restarted' or 'reloaded'
+apache2_restart_state: 'restarted'

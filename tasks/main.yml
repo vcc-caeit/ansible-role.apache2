@@ -1,0 +1,101 @@
+---
+- name: Install packages
+  apt:
+    name: apache2
+    cache_valid_time: 3600
+    install_recommends: no
+
+- name: Disable non-selected MPMs
+  apache2_module:
+    name: "mpm_{{ item }}"
+    state: absent
+    ignore_configcheck: true
+  with_items:
+    - "{{ apache2_mpms | difference(apache2_mpm) }}"
+  notify: Restart Apache
+
+- name: "Enable {{ apache2_mpm }} MPM"
+  apache2_module:
+    name: "mpm_{{ apache2_mpm }}"
+    state: present
+    ignore_configcheck: true
+  notify: Restart Apache
+
+- name: Creating MPM configuration
+  template:
+    src: "mpm_{{ apache2_mpm }}.conf.j2"
+    dest: /etc/apache2/conf-available/000mpm.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Apache
+
+- name: Enable MPM configuration
+  command: a2enconf 000mpm
+  args:
+    creates: /etc/apache2/conf-enabled/000mpm.conf
+  notify: Restart Apache
+
+- name: Creating security configuration
+  template:
+    src: security.conf.j2
+    dest: /etc/apache2/conf-available/security.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Apache
+
+- name: Enable security configuration
+  command: a2enconf security
+  args:
+    creates: /etc/apache2/conf-enabled/security.conf
+  notify: Restart Apache
+
+- name: Enable modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ apache2_mods_enabled }}"
+  notify: Restart Apache
+
+- name: Disable modules
+  apache2_module:
+    name: "{{ item }}"
+    force: true
+    state: absent
+  with_items:
+    - "{{ apache2_mods_disabled }}"
+  notify: Restart Apache
+
+- name: Create sites configuration
+  template:
+    src: "{{ item.value.template | default(apache2_vhost_template) }}"
+    dest: "/etc/apache2/sites-available/{{ item.key }}.conf"
+  with_dict: "{{ apache2_vhost_sites }}"
+  when: item.key not in apache2_vhost_remove_sites
+  notify: Restart Apache
+
+- name: Enable sites
+  command: "a2ensite {{ item.key }}"
+  args:
+    creates: "/etc/apache2/sites-enabled/{{ item.key }}.conf"
+  with_dict: "{{ apache2_vhost_sites }}"
+  when: item.key not in apache2_vhost_remove_sites
+  notify: Restart Apache
+
+- name: Remove sites
+  file:
+    path: "/etc/apache2/{{ item[0] }}/{{ item[1] }}.conf"
+    state: absent
+  with_nested:
+    - [ 'sites-enabled', 'sites-available']
+    - "{{ apache2_vhost_remove_sites }}"
+  notify: Restart Apache
+
+- name: Enable/Disable default site
+  file:
+    src: /etc/apache2/sites-available/000-default.conf
+    dest: /etc/apache2/sites-enabled/000-default.conf
+    state: "{{ apache2_vhost_disable_default | ternary('absent','link') }}"
+  notify: Restart Apache
