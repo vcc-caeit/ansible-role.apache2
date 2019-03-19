@@ -1,5 +1,6 @@
 galaxy_info:
   author: Nafallo Bjälevik
+  role_name: apache2
   description: Apache2 for Ubuntu LTSes
   company: Volvo Cars Corporation
   license: GPLv2
