@@ -1,17 +1,22 @@
 {{ ansible_managed | comment }}
 
-#
 # Disable access to the entire file system except for the directories that
 # are explicitly allowed later.
 #
 # This currently breaks the configurations that come with some web application
 # Debian packages.
-
+#
+{% if apache2_server_filesystem %}
+#<Directory />
+#   AllowOverride None
+#   Require all denied
+#</Directory>
+{% else %}
 <Directory />
-       AllowOverride None
-       Require all denied
+   AllowOverride None
+   Require all denied
 </Directory>
-
+{% endif %}
 
 
 # Changing the following options will not really affect the security of the
@@ -70,4 +75,10 @@ TraceEnable {{ apache2_server_trace_enabled }}
 # Requires mod_headers to be enabled.
 #
 #Header set X-Frame-Options: "sameorigin"
+{% if apache2_server_security is defined %}
 
+#
+# Extra settings added through `apache2_server_security` variable.
+#
+{{ apache2_server_security }}
+{% endif %}

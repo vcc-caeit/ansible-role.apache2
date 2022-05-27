@@ -1,5 +1,4 @@
 {{ ansible_managed | comment }}
-
 # worker MPM
 # StartServers: initial number of server processes to start
 # MaxClients: maximum number of simultaneous client connections
@@ -10,7 +9,7 @@
 <IfModule mpm_worker_module>
     StartServers           {{ apache2_mpm_startservers }}
     MinSpareThreads        {{ apache2_mpm_minsparethreads }}
-    MaxSpareThreads        {{ apache2_mpm_maxsparethreads }} 
+    MaxSpareThreads        {{ apache2_mpm_maxsparethreads }}
     ThreadLimit            {{ apache2_mpm_threadlimit }}
     ThreadsPerChild        {{ apache2_mpm_threadsperchild }}
     ServerLimit            {{ apache2_mpm_serverlimit }}

@@ -1,5 +1,4 @@
 {{ ansible_managed | comment }}
-
 # prefork MPM
 # StartServers: number of server processes to start
 # MinSpareServers: minimum number of server processes which are kept spare
@@ -9,7 +8,7 @@
 <IfModule mpm_prefork_module>
     StartServers           {{ apache2_mpm_startservers }}
     MinSpareServers        {{ apache2_mpm_minspareservers }}
-    MaxSpareServers        {{ apache2_mpm_maxspareservers }} 
+    MaxSpareServers        {{ apache2_mpm_maxspareservers }}
     MaxRequestWorkers      {{ apache2_mpm_maxrequestworkers }}
     MaxConnectionsPerChild {{ apache2_mpm_maxconnectionsperchild }}
 </IfModule>

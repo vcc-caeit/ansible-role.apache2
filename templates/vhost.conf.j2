@@ -1,6 +1,46 @@
 {{ ansible_managed | comment }}
 
 {% set vhost = item.value %}
+{% if vhost.ssl_key is defined and vhost.ssl_cert is defined %}
+<IfModule mod_ssl.c>
+  <VirtualHost *:443>
+    ServerName {{ vhost.servername | mandatory }}
+{% for alias in vhost.serveralias | default([]) %}
+    ServerAlias {{ alias }}
+{% endfor %}
+{% if vhost.serveradmin is defined %}
+    ServerAdmin {{ vhost.serveradmin }}
+{% endif %}
+
+    DocumentRoot {{ vhost.documentroot | mandatory }}
+
+    <Directory "{{ vhost.documentroot | mandatory }}">
+      AllowOverride {{ vhost.allow_override | default(apache2_allow_override) }}
+      Options {{ vhost.options | default(apache2_options) }}
+      Require all granted
+    </Directory>
+
+{% if vhost.separate_logs | default(False) %}
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+{% else %}
+    CustomLog ${APACHE_LOG_DIR}/{{ vhost.servername | mandatory }}-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/{{ vhost.servername | mandatory }}-error.log
+{% endif %}
+
+  SSLCertificateFile {{ vhost.ssl_cert }}
+  SSLCertificateKeyFile {{ vhost.ssl_key }}
+{% if vhost.ssl_chain is defined %}
+  SSLCACertificateFile {{ vhost.ssl_chain }}
+{% endif %}
+
+{% for extra_parameter in vhost.extra_parameters | default([]) %}
+  {{ extra_parameter }}
+{% endfor %}
+  </VirtualHost>
+</IfModule>
+
+{% endif %}
 <VirtualHost *:80>
   ServerName {{ vhost.servername | mandatory }}
 {% for alias in vhost.serveralias | default([]) %}
@@ -12,21 +52,21 @@
 
   DocumentRoot {{ vhost.documentroot | mandatory }}
 
-  <Directory "{{ vhost.documentroot }}">
+  <Directory "{{ vhost.documentroot | mandatory }}">
     AllowOverride {{ vhost.allow_override | default(apache2_allow_override) }}
     Options {{ vhost.options | default(apache2_options) }}
     Require all granted
   </Directory>
 
-{% if vhost.separate_logs | default(false) %}
+{% if vhost.separate_logs | default(False) %}
   CustomLog ${APACHE_LOG_DIR}/access.log combined
   ErrorLog ${APACHE_LOG_DIR}/error.log
 {% else %}
-  CustomLog ${APACHE_LOG_DIR}/{{ item.key }}-access.log combined
-  ErrorLog ${APACHE_LOG_DIR}/{{ item.key }}-error.log
+  CustomLog ${APACHE_LOG_DIR}/{{ vhost.servername | mandatory }}-access.log combined
+  ErrorLog ${APACHE_LOG_DIR}/{{ vhost.servername | mandatory }}-error.log
 {% endif %}
 
-{% for parameter in vhost.extra_parameters | default([]) %}
-  {{ parameter }}
+{% for extra_parameter in vhost.extra_parameters | default([]) %}
+  {{ extra_parameter }}
 {% endfor %}
 </VirtualHost>

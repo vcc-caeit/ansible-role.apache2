@@ -1,101 +1,66 @@
 ---
-- name: Install packages
-  apt:
-    name: apache2
+- name: Ensure Packages
+  ansible.builtin.apt:
+    name: "{{ apache2_packages }}"
     cache_valid_time: 3600
-    install_recommends: no
+    install_recommends: false
 
-- name: Disable non-selected MPMs
-  apache2_module:
-    name: "mpm_{{ item }}"
-    state: absent
-    ignore_configcheck: true
-  with_items:
-    - "{{ apache2_mpms | difference(apache2_mpm) }}"
+- name: Enumerate MPM
+  ansible.builtin.set_fact:
+    apache2_selected_mpm:
+      - name: "mpm_{{ apache2_mpm }}"
+        state: present
+
+- name: Ensure Modules
+  community.general.apache2_module:
+    name: "{{ item.name }}"
+    state: "{{ item.state | default('absent') if item.name.startswith('mpm_') else item.state | default('present') }}"
+  loop: "{{ apache2_selected_mpm | union(apache2_modules) | union(apache2_mpms | selectattr('name', '!=', apache2_selected_mpm[0].name)) | unique }}"
+  loop_control:
+    label: "{{ item.name }}"
   notify: Restart Apache
 
-- name: "Enable {{ apache2_mpm }} MPM"
-  apache2_module:
-    name: "mpm_{{ apache2_mpm }}"
-    state: present
-    ignore_configcheck: true
-  notify: Restart Apache
-
-- name: Creating MPM configuration
-  template:
-    src: "mpm_{{ apache2_mpm }}.conf.j2"
-    dest: /etc/apache2/conf-available/000mpm.conf
+- name: Ensure Configuration
+  ansible.builtin.template:
+    src: "{{ item.lstrip('/') }}.j2"
+    dest: "{{ item }}"
     owner: root
     group: root
     mode: 0644
+  loop:
+    - "/etc/apache2/mods-available/{{ apache2_selected_mpm[0].name }}.conf"
+    - /etc/apache2/conf-available/security.conf
   notify: Restart Apache
 
-- name: Enable MPM configuration
-  command: a2enconf 000mpm
-  args:
-    creates: /etc/apache2/conf-enabled/000mpm.conf
-  notify: Restart Apache
+- name: Ensure Site Directories
+  ansible.builtin.file:
+    path: "{{ item.value.documentroot | mandatory }}"
+    state: directory
+  loop: "{{ apache2_enabled_sites | dict2items }}"
+  loop_control:
+    label: "{{ item.value.documentroot }}"
 
-- name: Creating security configuration
-  template:
-    src: security.conf.j2
-    dest: /etc/apache2/conf-available/security.conf
-    owner: root
-    group: root
-    mode: 0644
-  notify: Restart Apache
-
-- name: Enable security configuration
-  command: a2enconf security
-  args:
-    creates: /etc/apache2/conf-enabled/security.conf
-  notify: Restart Apache
-
-- name: Enable modules
-  apache2_module:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    - "{{ apache2_mods_enabled }}"
-  notify: Restart Apache
-
-- name: Disable modules
-  apache2_module:
-    name: "{{ item }}"
-    force: true
-    state: absent
-  with_items:
-    - "{{ apache2_mods_disabled }}"
-  notify: Restart Apache
-
-- name: Create sites configuration
-  template:
+- name: Ensure Site Configuration
+  ansible.builtin.template:
     src: "{{ item.value.template | default(apache2_vhost_template) }}"
     dest: "/etc/apache2/sites-available/{{ item.key }}.conf"
-  with_dict: "{{ apache2_vhost_sites }}"
-  when: item.key not in apache2_vhost_remove_sites
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ apache2_enabled_sites | dict2items }}"
+  loop_control:
+    label: "/etc/apache2/sites-available/{{ item.key }}.conf"
   notify: Restart Apache
 
-- name: Enable sites
-  command: "a2ensite {{ item.key }}"
-  args:
-    creates: "/etc/apache2/sites-enabled/{{ item.key }}.conf"
-  with_dict: "{{ apache2_vhost_sites }}"
-  when: item.key not in apache2_vhost_remove_sites
+- name: Ensure Configuration State
+  ansible.builtin.file:
+    src: "{{ omit if item in apache2__disabled_sites else item | regex_replace('/etc/apache2', '..') }}"
+    dest: "{{ item | regex_replace('/(\\w+)-available/', '/\\1-enabled/') }}"
+    state: "{{ 'absent' if item in apache2__disabled_sites else 'link' }}"
+  loop: "{{ ['/etc/apache2/conf-available/security.conf'] | union(apache2__enabled_sites) | union(apache2__disabled_sites) | unique }}"
   notify: Restart Apache
-
-- name: Remove sites
-  file:
-    path: "/etc/apache2/{{ item[0] }}/{{ item[1] }}.conf"
-    state: absent
-  with_nested:
-    - [ 'sites-enabled', 'sites-available']
-    - "{{ apache2_vhost_remove_sites }}"
-  notify: Restart Apache
-
-- name: Enable/Disable default site
-  file:
-    src: /etc/apache2/sites-available/000-default.conf
-    dest: /etc/apache2/sites-enabled/000-default.conf
-    state: "{{ apache2_vhost_disable_default | ternary('absent','link') }}"
-  notify: Restart Apache
+  vars:
+    apache2__enabled_sites: "{{ apache2_enabled_sites | dict2items | map(attribute='key') |
+      map('regex_replace', '^(.*)$', '/etc/apache2/sites-available/\\1.conf') | list }}"
+    apache2__disabled_sites: "{{ apache2_disabled_sites | dict2items | map(attribute='key') |
+      map('regex_replace', '^(.*)$', '/etc/apache2/sites-available/\\1.conf') | list }}"

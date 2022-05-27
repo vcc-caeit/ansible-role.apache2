@@ -1,5 +1,5 @@
 ---
 apache2_mpms:
-  - 'event'
-  - 'prefork'
-  - 'worker'
+  - name: mpm_event
+  - name: mpm_prefork
+  - name: mpm_worker

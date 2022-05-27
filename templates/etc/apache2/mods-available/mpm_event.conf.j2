@@ -1,8 +1,7 @@
 {{ ansible_managed | comment }}
-
-# event MPM                                                                                                                                                                                                  
-# StartServers: initial number of server processes to start                                                                                                                                                  
-# MinSpareThreads: minimum number of worker threads which are kept spare                                                                                                                                     
+# event MPM
+# StartServers: initial number of server processes to start
+# MinSpareThreads: minimum number of worker threads which are kept spare
 # MaxSpareThreads: maximum number of worker threads which are kept spare
 # ThreadsPerChild: constant number of worker threads in each server process
 # MaxRequestWorkers: maximum number of worker threads
@@ -10,7 +9,7 @@
 <IfModule mpm_event_module>
     StartServers           {{ apache2_mpm_startservers }}
     MinSpareThreads        {{ apache2_mpm_minsparethreads }}
-    MaxSpareThreads        {{ apache2_mpm_maxsparethreads }} 
+    MaxSpareThreads        {{ apache2_mpm_maxsparethreads }}
     ThreadLimit            {{ apache2_mpm_threadlimit }}
     ThreadsPerChild        {{ apache2_mpm_threadsperchild }}
     ServerLimit            {{ apache2_mpm_serverlimit }}
