@@ -3,7 +3,7 @@
 {% set vhost = item.value %}
 {% if vhost.ssl_key is defined and vhost.ssl_cert is defined %}
 <IfModule mod_ssl.c>
-  <VirtualHost *:443>
+  <VirtualHost {{ vhost.listenssl | default('*:443') }}>
     ServerName {{ vhost.servername | mandatory }}
 {% for alias in vhost.serveralias | default([]) %}
     ServerAlias {{ alias }}
@@ -41,7 +41,7 @@
 </IfModule>
 
 {% endif %}
-<VirtualHost *:80>
+<VirtualHost {{ vhost.listen | default('*:80') }}>
   ServerName {{ vhost.servername | mandatory }}
 {% for alias in vhost.serveralias | default([]) %}
   ServerAlias {{ alias }}

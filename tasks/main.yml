@@ -20,6 +20,15 @@
     label: "{{ item.name }}"
   notify: Restart Apache
 
+- name: Enumerate Site Configuration
+  set_fact:
+    _apache2_directories: "{{ [item.value.documentroot | mandatory] | union(_apache2_directories | default([])) }}"
+    _apache2_listen: "{{ [item.value.listen | default('*:80')] | union(_apache2_listen | default([])) }}"
+    _apache2_ssl_listen: "{{ [item.value.ssl_listen | default('*:443')] | union(_apache2_ssl_listen | default([])) }}"
+  loop: "{{ apache2_enabled_sites | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
 - name: Ensure Configuration
   ansible.builtin.template:
     src: "{{ item.lstrip('/') }}.j2"
@@ -29,16 +38,15 @@
     mode: 0644
   loop:
     - "/etc/apache2/mods-available/{{ apache2_selected_mpm[0].name }}.conf"
+    - /etc/apache2/ports.conf
     - /etc/apache2/conf-available/security.conf
   notify: Restart Apache
 
 - name: Ensure Site Directories
   ansible.builtin.file:
-    path: "{{ item.value.documentroot | mandatory }}"
+    path: "{{ item }}"
     state: directory
-  loop: "{{ apache2_enabled_sites | dict2items }}"
-  loop_control:
-    label: "{{ item.value.documentroot }}"
+  loop: "{{ _apache2_directories }}"
 
 - name: Ensure Site Configuration
   ansible.builtin.template:
