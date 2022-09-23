@@ -18,14 +18,15 @@ We use the `community.general.apache2_module` for making these changes. The MPM 
       - name: rewrite
         state: present
 
-Add a set of properties per virtualhost, including `servername` (required), `documentroot` (required), `allow_override` (optional: defaults to the value of `apache2_allow_override`), `options` (optional: defaults to the value of `apache2_options`), `serveradmin` (optional), `serveralias` (optional: this has to be a list, even with a single value) and `extra_parameters` (optional: this is a list, with one line per entry. you can add whatever additional configuration lines you'd like in here), `separate_logs` (optional: true if you want for example example.com-{access,error}.log, false for {access,error}.log)
+Add a set of properties per virtualhost, including `servername` (required), `documentroot` (required), `listen` (optional, defaults to '*:80')`allow_override` (optional: defaults to the value of `apache2_allow_override`), `options` (optional: defaults to the value of `apache2_options`), `serveradmin` (optional), `serveralias` (optional: this has to be a list, even with a single value) and `extra_parameters` (optional: this is a list, with one line per entry. you can add whatever additional configuration lines you'd like in here), `separate_logs` (optional: true if you want for example example.com-{access,error}.log, false for {access,error}.log)
 
-For SSL you can define `ssl_key` (required), `ssl_cert` (required) and `ssl_chain` (optional). You will need to ensure the files are populated before configuring them.
+For SSL you can define `ssl_key` (required), `ssl_cert` (required), `ssl_chain` (optional) and `ssl_listen` (optional, defaults to '*:443'). You will need to ensure the files are populated before configuring them.
 
 There is also a special value, template, which default to `apache2_vhost_template`: 'vhost.conf.j2'. Using this option you are free to specify whatever variables you support using your custom template.
 
     apache2_enabled_sites:
       example.com:
+        listen: '*:80'
         servername: www.example.com
         serveralias:
           - example.com
