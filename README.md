@@ -22,6 +22,8 @@ Add a set of properties per virtualhost, including `servername` (required), `doc
 
 For SSL you can define `ssl_key` (required), `ssl_cert` (required), `ssl_chain` (optional) and `ssl_listen` (optional, defaults to '*:443'). You will need to ensure the files are populated before configuring them.
 
+To restrict access to the documentroot directory you can specify the `accesses` list, which defaults to "all granted" to give access to everyone. This applies to a single vhost, regardless of http or https being used.
+
 There is also a special value, template, which default to `apache2_vhost_template`: 'vhost.conf.j2'. Using this option you are free to specify whatever variables you support using your custom template.
 
     apache2_enabled_sites:
@@ -34,6 +36,8 @@ There is also a special value, template, which default to `apache2_vhost_templat
         documentroot: /var/www/html
         allow_override: None
         options: -Indexes -FollowSymlinks
+        accesses:
+          - all granted
         extra_parameters:
           - RewriteCond %{HTTP_HOST} !^www\. [NC]
           - RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
