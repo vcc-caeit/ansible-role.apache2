@@ -17,7 +17,7 @@
     <Directory "{{ vhost.documentroot | mandatory }}">
       AllowOverride {{ vhost.allow_override | default(apache2_allow_override) }}
       Options {{ vhost.options | default(apache2_options) }}
-{% for access in accesses | default(['all granted']) %}
+{% for access in vhost.accesses | default(['all granted']) %}
       Require {{ access }}
 {% endfor %}
       Require all granted
@@ -58,7 +58,7 @@
   <Directory "{{ vhost.documentroot | mandatory }}">
     AllowOverride {{ vhost.allow_override | default(apache2_allow_override) }}
     Options {{ vhost.options | default(apache2_options) }}
-{% for access in accesses | default(['all granted']) %}
+{% for access in vhost.accesses | default(['all granted']) %}
     Require {{ access }}
 {% endfor %}
   </Directory>
